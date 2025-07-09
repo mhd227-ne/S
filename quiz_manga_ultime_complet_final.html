@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>🎧 Quiz Manga</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: radial-gradient(circle, #0d1b2a, #1b263b);
+      color: #fff;
+      text-align: center;
+    }
+    h1 {
+      font-size: 3em;
+      color: #00b4d8;
+      text-shadow: 0 0 15px #00b4d8;
+    }
+    #splash {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      animation: fadeOut 2s ease 3s forwards;
+    }
+    #splash h1 {
+      font-size: 3em;
+      color: #00b4d8;
+      animation: glow 2s infinite alternate;
+    }
+    @keyframes glow {
+      from { text-shadow: 0 0 5px #00b4d8; }
+      to { text-shadow: 0 0 25px #00f2e6; }
+    }
+    @keyframes fadeOut {
+      to { opacity: 0; visibility: hidden; }
+    }
+    button {
+      padding: 12px 24px;
+      margin: 10px;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: linear-gradient(135deg, #00b4d8, #0077b6);
+      color: white;
+      box-shadow: 0 0 15px #00b4d8;
+      transition: all 0.3s ease;
+    }
+    button:hover {
+      transform: scale(1.08);
+      box-shadow: 0 0 25px #90e0ef;
+    }
+    .quiz-container {
+      background: #1a1a2e;
+      padding: 25px;
+      border-radius: 20px;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 20px #0077b6;
+    }
+    input[type="text"] {
+      padding: 12px;
+      margin: 10px;
+      border-radius: 10px;
+      width: 250px;
+      background: #0f3460;
+      border: 2px solid #00b4d8;
+      color: white;
+    }
+    #playersList {
+      background: #0d1b2a;
+      border-radius: 15px;
+      padding: 15px;
+      max-width: 500px;
+      margin: 20px auto;
+      display: none;
+      text-align: left;
+    }
+    .profile {
+      margin-top: 40px;
+    }
+    .profile img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      border: 3px solid #00b4d8;
+    }
+    #rating span {
+      cursor: pointer;
+      font-size: 2em;
+    }
+    audio { display: none; }
+  </style>
+</head>
+<body>
+
+<!-- Animation d’entrée -->
+<div id="splash"><h1>⚡ Makima Quiz ⚡</h1></div>
+
+<!-- Musique -->
+<audio id="bgmusic" autoplay loop>
+  <source src="https://files.catbox.moe/wlmtnz.mp3" type="audio/mp3">
+</audio>
+<button onclick="toggleMusic()">🔊 Musique</button>
+
+<!-- Image en haut -->
+<img src="https://files.catbox.moe/76490s.jpg" alt="Image Manga" style="width: 100%; max-height: 250px; object-fit: cover; border-radius: 10px;">
+<h1>🎮 Quiz Manga Ultime</h1>
+<p style="font-size: 17px; color: #00ffff;">💡 Plus de <strong>500 questions très difficiles</strong> sur les mangas préférés !</p>
+
+<!-- Formulaire -->
+<div id="form" class="quiz-container">
+  <input type="text" id="username" placeholder="Votre nom"><br>
+  <input type="text" id="usernumber" placeholder="Votre numéro"><br>
+  <button onclick="startQuiz()">🚀 Démarrer le Quiz</button>
+</div>
+
+<!-- Quiz -->
+<div class="quiz-container" id="quizBox" style="display:none;">
+  <div id="timer">⏳ Temps restant : <span id="time">30</span>s</div>
+  <p id="question"></p>
+  <div id="choices"></div>
+  <p id="result"></p>
+  <button onclick="nextQuestion()">➡️ Suivant</button>
+  <button onclick="showHelp()">🆘 Aide</button>
+</div>
+
+<!-- Voir joueurs -->
+<button onclick="showPlayers()">📋 Voir les joueurs</button>
+<div id="playersList"></div>
+
+<!-- Évaluation -->
+<div style="margin-top: 30px;">
+  <h3>⭐ Note ce quiz :</h3>
+  <div id="rating">
+    <span onclick="rate(1)">⭐</span>
+    <span onclick="rate(2)">⭐</span>
+    <span onclick="rate(3)">⭐</span>
+    <span onclick="rate(4)">⭐</span>
+    <span onclick="rate(5)">⭐</span>
+  </div>
+  <p id="ratingText" style="color: #ccc;"></p>
+</div>
+
+<!-- Collaborateur -->
+<div class="profile">
+  <img src="https://files.catbox.moe/xcqfiz.jpg" alt="Photo de Lemillion224">
+  <p style="margin: 5px 0; font-weight: bold;">👤 Collaborateur : Lemillion224</p>
+  <p style="color: #66f;">kawaki227📞 +22781289418</p>
+</div>
+
+<script>
+  let currentQuestion = 0, score = 0, timer, timeLeft = 30, loadedQuestions = [], userData = { name: "", number: "" };
+
+  function toggleMusic() {
+    const music = document.getElementById("bgmusic");
+    if (music.paused) { music.play(); } else { music.pause(); }
+  }
+
+  function startQuiz() {
+    userData.name = document.getElementById('username').value.trim();
+    userData.number = document.getElementById('usernumber').value.trim();
+    if (!userData.name || !userData.number) return alert('Entrez votre nom et numéro !');
+    document.getElementById("form").style.display = "none";
+    document.getElementById("quizBox").style.display = "block";
+    fetch("questions_manga_500_difficiles_reelles.json")
+      .then(res => res.json())
+      .then(data => {
+        loadedQuestions = data;
+        const savedIndex = localStorage.getItem("lastIndex");
+        if (savedIndex) currentQuestion = parseInt(savedIndex);
+        showQuestion();
+        startTimer();
+      })
+      .catch(() => alert("❌ Fichier JSON introuvable"));
+  }
+
+  function startTimer() {
+    clearInterval(timer);
+    timeLeft = 30;
+    document.getElementById("time").innerText = timeLeft;
+    timer = setInterval(() => {
+      timeLeft--;
+      document.getElementById("time").innerText = timeLeft;
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        showAnswer(null);
+      }
+    }, 1000);
+  }
+
+  function showQuestion() {
+    const q = loadedQuestions[currentQuestion];
+    document.getElementById("question").innerText = q.question;
+    const box = document.getElementById("choices");
+    box.innerHTML = "";
+    q.choices.forEach(choice => {
+      const btn = document.createElement("button");
+      btn.innerText = choice;
+      btn.onclick = () => showAnswer(choice);
+      box.appendChild(btn);
+    });
+    document.getElementById("result").innerText = "";
+  }
+
+  function showAnswer(choice) {
+    const q = loadedQuestions[currentQuestion];
+    clearInterval(timer);
+    const result = document.getElementById("result");
+    if (choice === q.answer) {
+      result.innerText = "✅ Bonne réponse !";
+      score++;
+    } else {
+      result.innerText = `❌ Mauvaise réponse. Réponse : ${q.answer}`;
+    }
+  }
+
+  function nextQuestion() {
+    currentQuestion++;
+    localStorage.setItem("lastIndex", currentQuestion);
+    if (currentQuestion < loadedQuestions.length) {
+      showQuestion();
+      startTimer();
+    } else {
+      saveScore();
+      localStorage.removeItem("lastIndex");
+      document.getElementById("quizBox").innerHTML = `<h2>🎉 Terminé !</h2><p>Score : ${score}/${loadedQuestions.length}</p><button onclick='location.reload()'>🔄 Rejouer</button>`;
+    }
+  }
+
+  function showHelp() {
+    alert("🧠 Lis bien la question, réfléchis avant de répondre !");
+  }
+
+  function saveScore() {
+    const players = JSON.parse(localStorage.getItem("mangaPlayers") || "[]");
+    players.push({ name: userData.name, number: userData.number, score });
+    players.sort((a, b) => b.score - a.score);
+    localStorage.setItem("mangaPlayers", JSON.stringify(players.slice(0, 10)));
+  }
+
+  function showPlayers() {
+    const players = JSON.parse(localStorage.getItem("mangaPlayers") || "[]");
+    const list = document.getElementById("playersList");
+    list.style.display = list.style.display === "none" ? "block" : "none";
+    list.innerHTML = "<h3>🏆 Top 10 Joueurs</h3>" + players.map((p, i) => `${i + 1}. ${p.name} | ${p.number} | ${p.score} pts`).join("<br>");
+  }
+
+  function rate(stars) {
+    document.getElementById("ratingText").innerText = `Merci pour votre note de ${stars} étoile(s) !`;
+    document.querySelectorAll("#rating span").forEach((s, i) => {
+      s.style.color = (i < stars) ? "gold" : \"#888\";
+    });
+  }
+</script>
+</body>
+</html>
